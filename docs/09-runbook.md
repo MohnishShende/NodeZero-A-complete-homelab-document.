@@ -68,3 +68,24 @@ cd ~/homelab-compose && docker compose pull && docker compose up -d
 3. Check DNS
 4. Check Caddy
 5. Check storage
+
+## Quick Recovery Actions
+
+### Restart All Services
+
+~~~bash
+docker compose down && docker compose up -d
+~~~
+
+### Restart Caddy
+
+~~~bash
+sudo systemctl restart caddy
+~~~
+
+### Restart DNS Stack
+
+~~~bash
+sudo systemctl restart pihole-FTL
+sudo systemctl restart unbound
+~~~

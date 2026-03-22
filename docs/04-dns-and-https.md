@@ -134,3 +134,11 @@ All sites use `tls internal`.
 ### Internal CA Trust Notes
 
 Because the configuration uses `tls internal`, client devices must trust Caddy’s internal CA.
+
+## Important Notes
+
+- DNS currently mixes loopback and public resolvers
+- ideal configuration should prefer loopback-only resolution
+- `02-home-arpa.conf` is required for internal domain resolution but was not captured
+
+This file must be backed up or recreated manually.

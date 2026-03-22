@@ -65,3 +65,17 @@ Client → resolve `*.home.arpa` to `192.168.1.181` → HTTPS to Caddy → rever
 ### Remote Access Path
 
 Remote device → Tailscale → NodeZero → internal services
+
+## Observations
+
+- Docker uses a dedicated bridge network
+- Tailscale provides secure remote overlay
+- LAN traffic is routed through Pi-hole → Caddy → services
+
+## Recommendation
+
+Move toward:
+
+- single ingress (Caddy)
+- minimal exposed ports
+- segmented Docker networks
