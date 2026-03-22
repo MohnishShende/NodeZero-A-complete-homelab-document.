@@ -1,0 +1,130 @@
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    ports:
+      - "7575:7575"
+    environment:
+      SECRET_ENCRYPTION_KEY: "CHANGE_ME_HOMARR_SECRET"
+      DB_URL: "/appdata/db/db.sqlite"
+      DB_DIALECT: "sqlite"
+      DB_DRIVER: "better-sqlite3"
+      AUTH_PROVIDERS: "credentials"
+      REDIS_IS_EXTERNAL: "false"
+      NODE_ENV: "production"
+    volumes:
+      - /home/nodezero/homarr/appdata:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  uptime-kuma:
+    image: louislam/uptime-kuma
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3002:3001"
+    dns:
+      - 192.168.1.181
+    environment:
+      UPTIME_KUMA_IS_CONTAINER: "1"
+    volumes:
+      - /home/nodezero/uptime:/app/data
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    ports:
+      - "8191:8191"
+    environment:
+      LOG_LEVEL: "info"
+    volumes:
+      - /home/nodezero/flaresolverr:/config
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      WEBUI_PORT: "8080"
+    volumes:
+      - /home/nodezero/qbittorrent/config:/config
+      - /mnt/hdd/downloads:/downloads
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    environment:
+      JELLYFIN_DATA_DIR: "/config"
+      JELLYFIN_CACHE_DIR: "/cache"
+      JELLYFIN_CONFIG_DIR: "/config/config"
+      JELLYFIN_LOG_DIR: "/config/log"
+      JELLYFIN_WEB_DIR: "/jellyfin/jellyfin-web"
+      JELLYFIN_FFMPEG: "/usr/lib/jellyfin-ffmpeg/ffmpeg"
+      XDG_CACHE_HOME: "/cache"
+      MALLOC_TRIM_THRESHOLD_: "131072"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility"
+      LD_PRELOAD: "/usr/lib/jellyfin/libjemalloc.so.2"
+    volumes:
+      - /home/nodezero/jellyfin/cache:/cache
+      - /home/nodezero/jellyfin/config:/config
+      - /mnt/hdd:/media
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr
+    container_name: jellyseerr
+    restart: unless-stopped
+    ports:
+      - "5056:5055"
+    volumes:
+      - /home/nodezero/jellyseerr/config:/app/config
+
+  prowlarr:
+    image: linuxserver/prowlarr
+    container_name: prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    environment:
+      PUID: "911"
+      PGID: "911"
+    volumes:
+      - /home/nodezero/prowlarr/config:/config
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    restart: unless-stopped
+    ports:
+      - "7878:7878"
+    environment:
+      PUID: "911"
+      PGID: "911"
+    volumes:
+      - /home/nodezero/radarr/config:/config
+      - /mnt/hdd/downloads:/downloads
+      - /mnt/hdd/movies:/movies
+
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - "8989:8989"
+    environment:
+      PUID: "911"
+      PGID: "911"
+      SONARR_CHANNEL: "v4-stable"
+      SONARR_BRANCH: "main"
+    volumes:
+      - /home/nodezero/sonarr/config:/config
+      - /mnt/hdd/downloads:/downloads
+      - /mnt/hdd/tv:/tv
