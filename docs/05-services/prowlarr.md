@@ -6,9 +6,31 @@
 
 ## Purpose
 
-Prowlarr is the indexer manager for Sonarr and Radarr.
+Prowlarr is the indexer manager. It provides a central location to configure and manage torrent and Usenet indexers, and syncs them automatically to Sonarr and Radarr.
+
+## Ports
+
+| Host | Container |
+|------|-----------|
+| 9696 | 9696 |
+
+Accessible via: `https://prowlarr.home.arpa`
+
+## Environment
+
+| Variable | Value |
+|----------|-------|
+| `PUID` | `911` |
+| `PGID` | `911` |
+
+## Bind Mounts
+
+| Host path | Container path |
+|-----------|----------------|
+| `/home/nodezero/prowlarr/config` | `/config` |
 
 ## Notes
 
-- Port mapping: `9696:9696`
-- Persistent path: `/home/nodezero/prowlarr/config:/config`
+- Expected response: `HTTP 401` (authentication required)
+- Ownership of `/home/nodezero/prowlarr` must be `911:911`
+- FlareSolverr is configured here as a proxy for Cloudflare-protected indexers

@@ -66,16 +66,69 @@ Client → resolve `*.home.arpa` to `192.168.1.181` → HTTPS to Caddy → rever
 
 Remote device → Tailscale → NodeZero → internal services
 
+## Port Exposure Inventory
+
+### Compose-Managed Application Ports
+
+| Port | Protocol | Service |
+|------|----------|---------|
+| 7575 | TCP | Homarr |
+| 3002 | TCP | Uptime Kuma (host) → 3001 (container) |
+| 8191 | TCP | FlareSolverr |
+| 8080 | TCP | qBittorrent Web UI |
+| 6881 | TCP/UDP | qBittorrent torrent traffic |
+| 8096 | TCP | Jellyfin |
+| 5056 | TCP | Jellyseerr (host) → 5055 (container) |
+| 9696 | TCP | Prowlarr |
+| 7878 | TCP | Radarr |
+| 8989 | TCP | Sonarr |
+
+### Reverse Proxy Ports (Caddy)
+
+| Port | Protocol | Service |
+|------|----------|---------|
+| 80 | TCP | Caddy HTTP |
+| 443 | TCP | Caddy HTTPS |
+| 2019 | TCP | Caddy admin (localhost only) |
+
+### Host-Native Service Ports
+
+| Port | Protocol | Service |
+|------|----------|---------|
+| 22 | TCP | SSH |
+| 53 | UDP/TCP | Pi-hole FTL (DNS) |
+| 139 | TCP | Samba (NetBIOS) |
+| 445 | TCP | Samba (SMB) |
+| 3000 | TCP | Pi-hole admin backend |
+| 5335 | UDP/TCP | Unbound (localhost only) |
+| 41641 | UDP | Tailscale |
+
+### Other Observed Listening Services
+
+These are non-homelab services present on the host:
+
+| Port | Protocol | Service |
+|------|----------|---------|
+| 323 | UDP | Chrony (localhost) |
+| 631 | TCP | CUPS (localhost) |
+| 4000 | TCP | NoMachine |
+| 5353 | UDP | Avahi mDNS |
+| 137, 138 | UDP | nmbd (NetBIOS) |
+
+These affect the host attack surface and should be reviewed if hardening is desired.
+
 ## Observations
 
-- Docker uses a dedicated bridge network
+- Docker uses a dedicated bridge network for the Compose stack
 - Tailscale provides secure remote overlay
 - LAN traffic is routed through Pi-hole → Caddy → services
+- Container ports are exposed directly on the host in addition to being reachable via Caddy
+- Jellyseerr uses a non-matching host/container port mapping (`5056:5055`); this must be preserved in any rebuild
 
 ## Recommendation
 
 Move toward:
 
 - single ingress (Caddy)
-- minimal exposed ports
-- segmented Docker networks
+- minimal directly-exposed container ports
+- UFW enabled to restrict external access to non-Caddy ports

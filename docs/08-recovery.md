@@ -99,28 +99,122 @@ sudo tailscale up
 
 ### Install and Configure Samba
 
-~~~bash
+```bash
 sudo apt install -y samba
+```
+
+Write `/etc/samba/smb.conf`:
+
+```ini
+[global]
+   workgroup = WORKGROUP
+   server string = NodeZero SMB
+   map to guest = Bad User
+   dns proxy = no
+
+[hdd]
+   path = /mnt/hdd
+   browseable = yes
+   read only = no
+   writable = yes
+   guest ok = no
+   valid users = nodezero
+   force user = nodezero
+   create mask = 0664
+   directory mask = 0775
+```
+
+Then:
+
+```bash
+sudo smbpasswd -a nodezero
 sudo systemctl enable --now smbd
 sudo systemctl enable --now nmbd
-~~~
+sudo systemctl restart smbd
+sudo systemctl restart nmbd
+```
+
+### Set Ownership and Permissions
+
+After all directories are created, apply correct ownership for each service:
+
+```bash
+# nodezero-owned services
+sudo chown -R nodezero:nodezero /home/nodezero/homarr
+sudo chown -R nodezero:nodezero /home/nodezero/uptime
+sudo chown -R nodezero:nodezero /home/nodezero/flaresolverr
+sudo chown -R nodezero:nodezero /home/nodezero/qbittorrent
+sudo chown -R nodezero:nodezero /home/nodezero/jellyfin
+sudo chown -R nodezero:nodezero /home/nodezero/jellyseerr
+
+# LinuxServer containers use UID/GID 911
+sudo chown -R 911:911 /home/nodezero/prowlarr
+sudo chown -R 911:911 /home/nodezero/radarr
+sudo chown -R 911:911 /home/nodezero/sonarr
+
+# Media disk owned by nodezero (Samba forces this)
+sudo chown -R nodezero:nodezero /mnt/hdd
+```
 
 ### Deploy Compose Stack
 
-Write `compose.yaml`, then:
+Copy `compose.yaml` from this repository to `/home/nodezero/homelab-compose/compose.yaml`, then:
 
-~~~bash
+```bash
 cd /home/nodezero/homelab-compose
 docker compose config
 docker compose up -d
-~~~
+```
 
 ### Validate Rebuild
 
-Validate:
+**1. Docker containers running:**
 
-1. Docker containers running
-2. Reverse proxy responses
-3. DNS behavior
-4. Caddy state
-5. Storage mounts
+```bash
+docker ps
+docker compose ps
+```
+
+Expected: 9 containers up, `jellyfin` and `uptime-kuma` showing healthy.
+
+**2. Reverse proxy:**
+
+```bash
+curl -kI https://dashboard.home.arpa
+curl -kI https://uptime.home.arpa
+curl -kI https://sonarr.home.arpa
+curl -kI https://radarr.home.arpa
+curl -kI https://prowlarr.home.arpa
+curl -kI https://jellyfin.home.arpa
+curl -kI https://jellyseerr.home.arpa
+curl -kI https://qbittorrent.home.arpa
+curl -kI https://flaresolverr.home.arpa
+```
+
+Expected: 200/302/307/401 responses as documented in `docs/04-dns-and-https.md`.
+
+**3. DNS:**
+
+```bash
+cat /etc/resolv.conf
+resolvectl status
+sudo ss -tulpn | grep -E '(:53|:5335)'
+```
+
+Expected: port 53 on `0.0.0.0`, port 5335 on `127.0.0.1`.
+
+**4. Caddy:**
+
+```bash
+sudo systemctl status caddy
+sudo ss -tulpn | grep -E '(:80|:443|:2019)'
+```
+
+**5. Storage:**
+
+```bash
+df -h
+ls -ld /mnt/hdd /mnt/hdd/downloads /mnt/hdd/movies /mnt/hdd/tv
+```
+
+If all checks pass, the homelab is functionally rebuilt.

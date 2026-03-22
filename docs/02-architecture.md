@@ -104,3 +104,108 @@ These paths are first-class rebuild and backup assets:
 - `/etc/samba/smb.conf`
 - `/etc/pihole`
 - `/etc/dnsmasq.d`
+
+## Docker Runtime State
+
+Current container runtime details:
+
+- Containers: 9 running, 0 paused, 0 stopped
+- Images: 12
+- Logging driver: `json-file`
+- Security options: `apparmor`, `seccomp`, `cgroupns`
+- Swarm: inactive
+- Live Restore: disabled
+
+### Docker Storage
+
+No named Docker volumes are used. All persistent state is through bind mounts. This makes backup and manual inspection simpler, but it also means all host bind mount paths must be preserved exactly in any rebuild.
+
+### Docker Networking
+
+Observed Docker networks:
+
+- `bridge` — default Docker bridge, unused by Compose stack
+- `homelab-compose_default` — Compose bridge, all application containers
+- `host` — host networking mode (not used by any current container)
+- `none`
+
+Application containers communicate through `homelab-compose_default`. Host-exposed ports are used for reverse proxy routing from Caddy.
+
+## Samba Configuration
+
+The live `/etc/samba/smb.conf`:
+
+```ini
+[global]
+   workgroup = WORKGROUP
+   server string = NodeZero SMB
+   map to guest = Bad User
+   dns proxy = no
+
+[hdd]
+   path = /mnt/hdd
+   browseable = yes
+   read only = no
+   writable = yes
+   guest ok = no
+   valid users = nodezero
+   force user = nodezero
+   create mask = 0664
+   directory mask = 0775
+```
+
+Samba exports `/mnt/hdd` with authenticated access restricted to `nodezero`. All file operations are forced as `nodezero`. Guest access is disabled.
+
+## Service and Process Inventory
+
+Current running systemd services of operational importance:
+
+| Service | Role |
+|---------|------|
+| `caddy.service` | Reverse proxy and internal TLS |
+| `pihole-FTL.service` | DNS resolver and ad blocking |
+| `unbound.service` | Recursive DNS resolver |
+| `tailscaled.service` | Secure remote access overlay |
+| `ssh.service` | Remote shell access |
+| `snap.docker.dockerd.service` | Container runtime |
+| `smbd.service` | Samba file sharing |
+| `nmbd.service` | NetBIOS name service |
+| `NetworkManager.service` | Network management |
+| `systemd-resolved.service` | Local DNS stub resolver |
+| `chrony.service` | NTP time synchronization |
+| `lightdm.service` | Display manager (desktop stack) |
+| `nxserver.service` | NoMachine remote desktop |
+| `cups.service` | Print server |
+| `cups-browsed.service` | Network printer discovery |
+| `avahi-daemon.service` | mDNS/service discovery |
+| `unattended-upgrades.service` | Automatic security updates |
+
+NodeZero is not a minimal headless server. It runs a full desktop stack including LightDM, CUPS, Avahi, and NoMachine alongside the homelab services.
+
+## Permissions and Ownership Model
+
+Container UID/GID assignments:
+
+| Service | PUID | PGID |
+|---------|------|------|
+| qBittorrent | 1000 | 1000 |
+| Prowlarr | 911 | 911 |
+| Radarr | 911 | 911 |
+| Sonarr | 911 | 911 |
+
+Samba forces all writes as `nodezero`.
+
+A rebuild must preserve ownership compatibility. Apply these after creating directories:
+
+```bash
+sudo chown -R nodezero:nodezero /home/nodezero/homarr
+sudo chown -R nodezero:nodezero /home/nodezero/uptime
+sudo chown -R nodezero:nodezero /home/nodezero/flaresolverr
+sudo chown -R nodezero:nodezero /home/nodezero/qbittorrent
+sudo chown -R nodezero:nodezero /home/nodezero/jellyfin
+sudo chown -R nodezero:nodezero /home/nodezero/jellyseerr
+sudo chown -R 911:911 /home/nodezero/prowlarr
+sudo chown -R 911:911 /home/nodezero/radarr
+sudo chown -R 911:911 /home/nodezero/sonarr
+sudo chown -R nodezero:nodezero /mnt/hdd
+```

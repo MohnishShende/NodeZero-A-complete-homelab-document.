@@ -63,29 +63,100 @@ cd ~/homelab-compose && docker compose pull && docker compose up -d
 
 ## Post-Change Validation Checklist
 
-1. Check containers
-2. Check reverse proxy
-3. Check DNS
-4. Check Caddy
-5. Check storage
+After any significant change, run through these checks:
+
+**1. Containers:**
+
+```bash
+docker ps
+docker compose ps
+```
+
+Expected: 9 containers, `jellyfin` and `uptime-kuma` showing `(healthy)`.
+
+**2. Reverse proxy (spot check):**
+
+```bash
+curl -kI https://dashboard.home.arpa
+curl -kI https://uptime.home.arpa
+curl -kI https://jellyfin.home.arpa
+```
+
+Expected:
+- `dashboard.home.arpa` → `HTTP/2 200`
+- `uptime.home.arpa` → `HTTP/2 302`
+- `jellyfin.home.arpa` → `HTTP/2 302`
+
+**3. DNS:**
+
+```bash
+cat /etc/resolv.conf
+sudo ss -tulpn | grep -E '(:53|:5335)'
+```
+
+Expected: port 53 open on `0.0.0.0`, port 5335 bound to `127.0.0.1`.
+
+**4. Caddy:**
+
+```bash
+sudo systemctl status caddy
+```
+
+Expected: `Active: active (running)`.
+
+**5. Storage:**
+
+```bash
+df -h /mnt/hdd
+```
+
+Expected: `/dev/sdc1` mounted, `916G` total.
 
 ## Quick Recovery Actions
 
-### Restart All Services
+### Restart All Containers
 
-~~~bash
-docker compose down && docker compose up -d
-~~~
+```bash
+cd ~/homelab-compose && docker compose down && docker compose up -d
+```
+
+### Restart a Single Container
+
+```bash
+cd ~/homelab-compose && docker compose restart <service-name>
+```
 
 ### Restart Caddy
 
-~~~bash
+```bash
 sudo systemctl restart caddy
-~~~
+sudo systemctl status caddy
+```
 
 ### Restart DNS Stack
 
-~~~bash
+```bash
 sudo systemctl restart pihole-FTL
 sudo systemctl restart unbound
-~~~
+sudo ss -tulpn | grep -E '(:53|:5335)'
+```
+
+### Tail Logs for a Specific Service
+
+```bash
+cd ~/homelab-compose && docker compose logs -f sonarr
+```
+
+Replace `sonarr` with any service name.
+
+### Check What's Listening on a Port
+
+```bash
+sudo ss -tulpn | grep :<port>
+```
+
+### Inspect a Container
+
+```bash
+docker inspect <container-name>
+```
